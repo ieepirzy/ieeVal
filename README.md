@@ -113,10 +113,17 @@ is considered validated before this gate passes.
 
 ## Development
 
-The repository has not been scaffolded yet. The intended initial shape is a
-Python package with a CLI, typed schemas, deterministic test fixtures, and
-versioned artifact contracts. Concrete installation and command examples will
-be added with the first executable milestone.
+Phase 0 scaffolding is in place: a minimal Python package (`ieeval`) with a
+placeholder CLI, lint/type-check config, and a CI workflow. The versioned
+schemas, adapter protocols, and fixtures described above are still to come -
+this is just the scaffold sliver of Phase 0.
+
+```bash
+pip install -e ".[dev]"
+pytest
+ruff check .
+mypy
+```
 
 See [ROADMAP.md](ROADMAP.md) for sequencing and acceptance criteria.
 
@@ -137,4 +144,4 @@ See [ROADMAP.md](ROADMAP.md) for sequencing and acceptance criteria.
 
 ## License
 
-No license has been selected yet.
+MIT - see [LICENSE](LICENSE).
