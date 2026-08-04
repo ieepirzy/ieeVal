@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "queries": [
+    {
+      "id": "ocr-lineage-fi",
+      "text": "Miksi OCR-tuloksen pitäisi korvata alkuperäinen artefakti?",
+      "language": "fi",
+      "query_type": "retrieval",
+      "namespace": "architecture",
+      "positive_artifact_ids": ["artifact-123"],
+      "hard_negative_ids": ["artifact-456"],
+      "expected_tags": ["ocr", "lineage"],
+      "provenance": "manually curated",
+      "notes": "Tests exact intent against a topical near miss."
+    }
+  ]
+}
