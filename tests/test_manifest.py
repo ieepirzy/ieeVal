@@ -1,4 +1,4 @@
-from dataclasses import fields
+from dataclasses import fields, replace
 
 import pytest
 
@@ -51,7 +51,7 @@ def test_build_manifest_run_id_changes_with_parent_run_id():
 
 
 def test_build_manifest_run_id_changes_with_seed():
-    first = _toy_manifest(seed=42)
+    first = _toy_manifest()
     second = _toy_manifest(seed=43)
     assert first.run_id != second.run_id
 
@@ -127,3 +127,41 @@ def test_manifest_rejects_future_schema_version():
 def test_manifest_rejects_non_positive_truncation_dimension():
     with pytest.raises(ManifestValidationError, match="truncation_dimension"):
         _toy_manifest(truncation_dimension=0)
+
+
+@pytest.mark.parametrize(
+    "malicious_run_id",
+    [
+        "../../../../tmp/x",
+        "../escaped",
+        "run-tooshort",
+        "run-0123456789abcdeff",  # 17 hex chars, one too many
+        "run-0123456789ABCDEF",  # uppercase hex not produced by compute_run_id
+        "/etc/passwd",
+        "run-0123456789abcdef/../../escaped",
+    ],
+)
+def test_manifest_rejects_run_id_not_shaped_like_compute_run_id(malicious_run_id):
+    payload = _toy_manifest().to_dict()
+    payload["run_id"] = malicious_run_id
+
+    with pytest.raises(ManifestValidationError, match="run_id"):
+        RunManifest.from_dict(payload)
+
+
+def test_write_run_rejects_path_traversal_run_id_and_does_not_escape_root(tmp_path):
+    # Simulates a foreign/tampered manifest.json (e.g. reloaded from disk or
+    # constructed directly) whose run_id was crafted to escape the sandbox.
+    good = _toy_manifest()
+    malicious = replace(good, run_id="../../../../tmp/ieeval_traversal_poc")
+
+    root = tmp_path / "runs"
+    root.mkdir()
+
+    with pytest.raises(ManifestValidationError, match="run_id"):
+        write_run(root, malicious)
+
+    # Nothing should have been written inside the configured root, and (since
+    # validation happens before any filesystem access) nothing was created
+    # anywhere else either.
+    assert list(root.iterdir()) == []
