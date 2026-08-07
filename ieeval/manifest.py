@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -94,6 +95,15 @@ _IDENTITY_FIELDS = (
     "dependency_versions",
     "parent_run_id",
 )
+
+#: Exact shape produced by :func:`compute_run_id`: ``"run-"`` followed by the
+#: first 16 hex digits of a SHA-256 digest. ``RunManifest.validate`` enforces
+#: this on every manifest -- including ones reconstructed via
+#: :meth:`RunManifest.from_dict`/:func:`read_manifest` -- because ``run_id``
+#: is used verbatim to build a filesystem path in :func:`write_run`; anything
+#: that doesn't match this shape (e.g. containing ``/`` or ``..``) must never
+#: reach that path join.
+_RUN_ID_RE = re.compile(r"^run-[0-9a-f]{16}$")
 
 
 class ManifestValidationError(ValueError):
@@ -176,6 +186,12 @@ class RunManifest:
                     f"run manifest {self.run_id!r} has an empty/invalid required field: "
                     f"{field_name!r}"
                 )
+
+        if not _RUN_ID_RE.fullmatch(self.run_id):
+            raise ManifestValidationError(
+                f"run manifest field 'run_id' must match {_RUN_ID_RE.pattern!r} (the "
+                f"shape produced by compute_run_id), got {self.run_id!r}"
+            )
 
         if not isinstance(self.schema_version, int):
             raise ManifestValidationError(
